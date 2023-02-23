@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import fs from 'fs'
+import pki from 'node-forge'
 
 const public_key_path = 'public_key.pem';
 const private_key_path = 'private_key.pem';
@@ -25,29 +26,17 @@ else{
   var privateKeyRead = fs.readFileSync('private_key.pem', 'utf8')
 }
 
-
-
-
-
-
-
-export function encryptText (plainText) {
-  return crypto.publicEncrypt({
-    key: publicKeyRead,
-    padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-    oaepHash: 'sha256'
-  },
-  Buffer.from(plainText)
-  )
+export function encryptText (plainText, publicKey) {
+  var encs = crypto.publicEncrypt(publicKey, Buffer.from(plainText));
+  var encs = encs.toString("base64");
+  return encs;
 }
 
 export function decryptText (encryptedText) {
-  return crypto.privateDecrypt(
-    {
-      key: privateKeyRead,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha256'
-    },
-    encryptedText
-  )
+  var dcs = crypto.privateDecrypt(privateKeyRead, Buffer.from(encryptedText, "base64"));
+  var dcs = dcs.toString("utf8");
+  return dcs;
+}
+export function getPublicKey(){
+  return publicKeyRead;
 }
