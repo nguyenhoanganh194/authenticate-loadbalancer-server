@@ -3,10 +3,12 @@ import express, { json, urlencoded } from 'express';
 import http from 'http';
 import request from 'express'
 import axios from 'axios'
+import requestIp from 'request-ip'
 const app = express();
 const port = 8001;
 
 app.use(json())
+app.set('trust proxy', true)
 app.use(urlencoded({ extended: true }))
 app.listen(port, (err) => {
   if (err) {
@@ -28,7 +30,10 @@ app.post("/login",(request, response) => {
     'Content-Type': 'application/json',
     'Authorization': 'valid_token'
   };
-  axios.post('http://127.0.0.1:9000/ticket', {
+  var server = gameServers[Object.keys(gameServers)[0]];
+  console.log(server);
+
+  axios.post(server.ip +'/ticket', {
     username: loginData.username,
   }, { headers })
   .then((serverRespond) => {
@@ -44,4 +49,31 @@ app.post("/login",(request, response) => {
   });
 });
 
+app.post('/gameserver', (request, response) => {
+  if(gameServers[request.ip] == null){
+    var gameServer = {
+      ip : request.headers.host,
+      numClients: 0,
+      numRooms : 0
+    }
+    console.log(request.socket.address());
+    gameServers[request.ip] = gameServer;
+  }
+  gameServers[request.ip].numClients = request.body.numClients;
+  gameServers[request.ip].numRooms = request.body.numRooms;
+  response.send("Oke");
+});
+  
+app.post('/aiServer', (request, response) => {
+  aiServers = request.ip;
+  response.send("Oke");
+});
 
+
+const aiServers = null;
+const gameServers = {};
+
+function getClientAddress(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0] 
+  || req.connection.remoteAddress;
+};
