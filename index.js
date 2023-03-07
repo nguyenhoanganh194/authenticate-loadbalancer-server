@@ -23,6 +23,14 @@ app.get("/",(request, response) => {
   response.send("authenticate-loadbalancer-server");
 });
 
+app.get("/ai",(request, response) => {
+  response.send(aiServers);
+});
+
+app.get("/gameserver",(request, response) => {
+  response.send(gameServers);
+});
+
 app.get("/login",(request, response) => {
   response.send(getPublicKey());
 });
