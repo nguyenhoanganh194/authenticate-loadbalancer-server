@@ -18,6 +18,11 @@ app.listen(port, (err) => {
   console.log(`server is listening on ${port}`)
 })
 
+
+app.get("/",(request, response) => {
+  response.send("authenticate-loadbalancer-server");
+});
+
 app.get("/login",(request, response) => {
   response.send(getPublicKey());
 });
