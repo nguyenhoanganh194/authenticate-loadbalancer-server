@@ -4,6 +4,7 @@ import http from 'http';
 import request from 'express'
 import axios from 'axios'
 import requestIp from 'request-ip'
+import e from 'express';
 const app = express();
 const port = 8001;
 
@@ -26,14 +27,16 @@ app.post("/login",(request, response) => {
   const decryptedText = decryptText(request.body.data)
   var loginData = JSON.parse(decryptedText);
   //TODO: data checking here
+
+  var gameServer = getMinLoadServer();
+  if(gameServer == null){
+    response.send("Service not available",500) 
+  }
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': 'valid_token'
   };
-  var server = gameServers[Object.keys(gameServers)[0]];
-  console.log(server);
-
-  axios.post(server.ip +'/ticket', {
+  axios.post(gameServer.ip +'/ticket', {
     username: loginData.username,
   }, { headers })
   .then((serverRespond) => {
@@ -50,30 +53,71 @@ app.post("/login",(request, response) => {
 });
 
 app.post('/gameserver', (request, response) => {
-  if(gameServers[request.ip] == null){
+  var finalIp = getClientAddress(request);
+  if(gameServers[finalIp] == null){
     var gameServer = {
-      ip : request.headers.host,
+      ip : finalIp,
       numClients: 0,
       numRooms : 0
     }
-    console.log(request.socket.address());
-    gameServers[request.ip] = gameServer;
+    gameServers[finalIp] = gameServer;
   }
-  gameServers[request.ip].numClients = request.body.numClients;
-  gameServers[request.ip].numRooms = request.body.numRooms;
-  response.send("Oke");
+  gameServers[finalIp].numClients = request.body.numClients;
+  gameServers[finalIp].numRooms = request.body.numRooms;
+  if(aiServers != null){
+    response.send(aiServers,200);
+  }
+  else{
+    response.send("No AI Server",202);
+  }
+ 
 });
   
-app.post('/aiServer', (request, response) => {
-  aiServers = request.ip;
+app.post('/aiserver', (request, response) => {
+  aiServers = getClientAddress(request);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'valid_token'
+  };
+  Object.keys(gameServers).forEach(function(key) {
+    var gameServer = gameServers[key];
+    axios.post(gameServer.ip +'/aiserver', {
+      url: aiServers,
+    }, { headers })
+    .then((serverRespond) => {
+      console.log(serverRespond);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  });
   response.send("Oke");
 });
 
 
-const aiServers = null;
-const gameServers = {};
+var aiServers = null;
+var gameServers = {};
 
-function getClientAddress(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',')[0] 
-  || req.connection.remoteAddress;
+function getClientAddress(request) {
+  var ip = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
+  if (ip.substr(0, 7) == "::ffff:") {
+    ip = ip.substr(7)
+  }
+  var port = request.headers.port;
+  var finalIp = "http://" + ip + ":" + port
+  return finalIp;
 };
+function getMinLoadServer(){
+  var minServer = null;
+  Object.keys(gameServers).forEach(function(key) {
+    var gameServer = gameServers[key];
+    if(minServer == null){
+      minServer = gameServer;
+    }
+    if(minServer.numClients > gameServer.numClients){
+      minServer = gameServer;
+    }
+  });
+  return minServer;
+}
