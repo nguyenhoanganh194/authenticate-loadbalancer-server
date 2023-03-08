@@ -4,11 +4,10 @@ import pki from 'node-forge'
 
 const public_key_path = 'public_key.pem';
 const private_key_path = 'private_key.pem';
-if (fs.existsSync(public_key_path) && fs.existsSync(private_key_path)) {
-  var publicKeyRead = fs.readFileSync('public_key.pem', 'utf8');
-  var privateKeyRead = fs.readFileSync('private_key.pem', 'utf8')
-}
-else{
+
+var publicKeyRead = null;
+var privateKeyRead = null;
+export function updateKey(){
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
     modulusLength: 2048,
     publicKeyEncoding: {
@@ -22,8 +21,8 @@ else{
   });
   fs.writeFileSync("public_key.pem", publicKey);
   fs.writeFileSync("private_key.pem", privateKey);
-  var publicKeyRead = fs.readFileSync('public_key.pem', 'utf8');
-  var privateKeyRead = fs.readFileSync('private_key.pem', 'utf8')
+  publicKeyRead = fs.readFileSync('public_key.pem', 'utf8');
+  privateKeyRead = fs.readFileSync('private_key.pem', 'utf8')
 }
 
 export function encryptText (plainText, publicKey) {
