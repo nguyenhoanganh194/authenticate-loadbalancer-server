@@ -64,7 +64,7 @@ app.post("/updateuserdata",(request, response) => {
  
 
 app.post('/gameserver', (request, response) => {
-  var finalIp = getClientAddress(request);
+  var finalIp = getClientAddressWithPort(request);
   if(gameServers[finalIp] == null){
     var gameServer = {
       ip : finalIp,
@@ -76,7 +76,7 @@ app.post('/gameserver', (request, response) => {
   gameServers[finalIp].numClients = request.body.numClients;
   gameServers[finalIp].numRooms = request.body.numRooms;
   if(aiServers != null){
-    response.send(aiServers,200);
+    response.send(getClidenIpAddress(request),200);
   }
   else{
     response.send("No AI Server",202);
@@ -85,7 +85,7 @@ app.post('/gameserver', (request, response) => {
 });
   
 app.post('/aiserver', (request, response) => {
-  var finalIp = getClientAddress(request);
+  var finalIp = getClientAddressWithPort(request);
   if(aiServers[finalIp] == null){
     var server = {
       ip : finalIp,
@@ -94,21 +94,29 @@ app.post('/aiserver', (request, response) => {
     }
     aiServers[finalIp] = server;
   }
-  response.send("Oke");
+  response.send(finalIp);
 });
 
 
 
 
-function getClientAddress(request) {
-  var ip = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
-  if (ip.substr(0, 7) == "::ffff:") {
-    ip = ip.substr(7)
-  }
+function getClientAddressWithPort(request) {
+  var ip = getClidenIpAddress(request);
   var port = request.headers.port;
   var finalIp = "http://" + ip + ":" + port
   return finalIp;
 };
+
+function getClidenIpAddress(request){
+  var ip = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
+  if (ip.substr(0, 7) == "::ffff:") {
+    ip = ip.substr(7)
+  }
+  return ip;
+}
+
+
+
 function getMinLoadServer(){
   var minServer = null;
   Object.keys(gameServers).forEach(function(key) {
@@ -193,8 +201,6 @@ function updateNodeStatus(){
       delete gameServers[gameServer.ip];
     });
   });
-  console.log(aiServers);
-  console.log(gameServers);
 }
 
 updateKeyEveryInterval()
